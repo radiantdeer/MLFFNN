@@ -5,6 +5,7 @@ class Link:
         self.prev = prev
         self.next = next
         self.weight = 0
+        self.currentDelta = 0
 
     def set_weight(self, weight):
         self.weight = weight
