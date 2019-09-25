@@ -8,6 +8,32 @@ class Node:
         self.next_link = []
         self.current_value = 0
         self.bias = 0
+        self.bias_weight = 0
+        self.current_delta = 0
+
+    def get_current_value(self):
+        return self.current_value
+
+    def get_all_prev_links(self):
+        return self.prev_link
+
+    def get_all_next_links(self):
+        return self.next_link
+
+    def get_bias(self):
+        return self.bias
+
+    def get_bias_weight(self):
+        return self.bias_weight
+
+    def get_current_delta(self):
+        return self.current_delta
+
+    def set_bias(self, bias: float):
+        self.bias = bias
+
+    def set_bias_weight(self, weight: float):
+        self.bias_weight = weight
 
     def add_previous_link(self, prev_link):
         self.prev_link.append(prev_link)
@@ -16,48 +42,59 @@ class Node:
         self.next_link.append(next_link)
 
     def feed_forward(self, input_value = None):
-        input = self.bias
-        print("N", end="")
-        if input_value:
+        input = (self.bias * self.bias_weight)
+        if (input_value != None):
             input += (self.prev_link[0].get_weight() * input_value)
         else:
             for link in self.prev_link:
-                prev_node_value = link.prev.current_value
+                prev_node_value = link.get_prev_node().get_current_value()
                 prev_node_weight = link.get_weight()
                 input += (prev_node_weight * prev_node_value)
         self.current_value = sigmoid(input)
+        return self.current_value
 
-    def backpropagation(self, delta):
-        # Will implement later. Basically will just pass delta to all of it's connected Links
-        pass
+    # Delta == expected output, say, for an output node
+    def backpropagation(self, delta = None):
+        if (len(self.next_link) > 0):
+            this_node_delta = self.current_value * (1 - self.current_value)
+            next_link_deltas = 0
+            for link in self.next_link:
+                next_link_deltas += (link.get_weight() * link.get_next_node().get_current_value())
+            self.current_delta = this_node_delta * next_link_deltas
+        else:
+            self.current_delta = self.current_value * (1 - self.current_value) * (delta - self.current_delta)
 
-    def update_weight(self, delta):
-        # Will implement later. Basically will just pass delta to all of it's connected Links
-        pass
+    # Only updates previous links only
+    def update_weight(self, learning_rate, momentum, override_x_value = None):
+        for link in self.prev_link:
+            link.update_weight(learning_rate, momentum, override_x_value)
 
 
 class NodeLink:
 
-    def __init__(self, prev: Node = None, next: Node = None, weight: float = 0):
-        self.prev = prev
-        self.next = next
+    def __init__(self, prev_node = None, next_node = None, weight = 0):
+        self.prev_node = prev_node
+        self.next_node = next_node
         self.weight = 0
-        self.currentDelta = 0
+        self.previous_delta_weight = 0
 
-    def set_weight(self, weight: float):
-        self.weight = weight
+    def get_prev_node(self):
+        return self.prev_node
+
+    def get_next_node(self):
+        return self.next_node
 
     def get_weight(self):
         return self.weight
+    
+    def set_weight(self, weight: float):
+        self.weight = weight
 
-    def feed_forward(self, input_value: float):
-        # Will implement later
-        pass
-
-    def backpropagation(self, delta: float):
-        # Will implement later
-        pass
-
-    def update_weight(self, delta):
-        # Will implement later
-        pass
+    def update_weight(self, learning_rate, momentum, override_x_value = None):
+        if (override_x_value):
+            delta_weight = learning_rate * self.next_node.get_current_delta() * override_x_value
+        else:
+            delta_weight = learning_rate * self.next_node.get_current_delta() * self.prev_node.get_current_value()
+        delta_weight += momentum * self.previous_delta_weight
+        self.weight += delta_weight
+        self.previous_delta_weight = delta_weight

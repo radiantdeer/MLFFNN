@@ -1,5 +1,5 @@
 from neuralnetwork.node import Node
-from neuralnetwork.exceptions import IncorrectInputSizeException
+from neuralnetwork.exceptions import IncorrectSizeException
 
 # A representation of a single layer
 class Layer:
@@ -28,17 +28,42 @@ class Layer:
         return self.nodes
 
     def feed_forward(self, input_values = None):
-        print("L")
         if input_values:
             if (len(input_values) != self.get_node_count()):
-                raise IncorrectInputSizeException("Input values supplied doesn't match input layer topology!")
+                raise IncorrectSizeException("Input values supplied doesn't match input layer topology!")
         iter = 0
+        output_values = [0 for x in range(self.get_node_count())]
         if input_values:
             for node in self.nodes:
-                node.feed_forward(input_values[iter])
+                output_values[iter] = node.feed_forward(input_values[iter])
                 iter += 1
         else:
             for node in self.nodes:
-                node.feed_forward()
+                output_values[iter] = node.feed_forward()
                 iter += 1
+        return output_values
+
+    def backpropagation(self, real_values = None):
+        if real_values:
+            if(len(real_values) != self.get_node_count()):
+                raise IncorrectSizeException("Values supplied doesn't match output layer topology!")
+        iter = 0
+        if real_values:
+            for node in self.nodes:
+                node.backpropagation(real_values[iter])
+        else:
+            for node in self.nodes:
+                node.backpropagation()
+    
+    # Only updates previous links only
+    def update_weight(self, learning_rate, momentum, override_x_values = None):
+        if override_x_values:
+            iter = 0
+            for node in self.nodes:
+                node.update_weight(learning_rate, momentum, override_x_values[iter])
+                iter += 1
+        else:
+            for node in self.nodes:
+                node.update_weight(learning_rate, momentum)
+
         
