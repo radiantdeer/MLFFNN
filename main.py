@@ -35,5 +35,15 @@ model.set_output_layer(Layer(1), True)
 model.prepare()
 
 model.train(normed_dataset, expected, 1, 10)
+predicted = []
 for val in normed_dataset:
-    print(model.predict(val))
+    predicted.append(model.predict(val))
+
+print(predicted)
+
+correct_prediction = 0
+for i in range(len(predicted)):
+    if (expected[i] == predicted[i]):
+        correct_prediction += 1
+
+print("Accuracy: ", correct_prediction/len(predicted))
