@@ -7,8 +7,9 @@ class Node:
         self.prev_link = []
         self.next_link = []
         self.current_value = 0
-        self.bias = 0
+        self.bias = 1
         self.bias_weight = 0
+        self.previous_delta_bias = 0
         self.current_delta = 0
 
     def get_current_value(self):
@@ -53,19 +54,25 @@ class Node:
         self.current_value = sigmoid(input)
         return self.current_value
 
-    # Delta == expected output, say, for an output node
+    # delta == expected output, say, for an output node. 
+    # If delta not supplied, this node will try to grab from it's next node
     def backpropagation(self, delta = None):
-        if (len(self.next_link) > 0):
+        if (delta == None):
             this_node_delta = self.current_value * (1 - self.current_value)
             next_link_deltas = 0
             for link in self.next_link:
-                next_link_deltas += (link.get_weight() * link.get_next_node().get_current_value())
+                next_link_deltas += (link.get_weight() * link.get_next_node().get_current_delta())
             self.current_delta = this_node_delta * next_link_deltas
         else:
-            self.current_delta = self.current_value * (1 - self.current_value) * (delta - self.current_delta)
+            self.current_delta = self.current_value * (1 - self.current_value) * (delta - self.current_value)
+        #print(self.current_delta)
 
     # Only updates previous links only
     def update_weight(self, learning_rate, momentum, override_x_value = None):
+        delta_bias_weight = learning_rate * self.current_delta * self.bias
+        delta_bias_weight += momentum * self.previous_delta_bias
+        self.bias_weight += delta_bias_weight
+        self.previous_delta_bias = delta_bias_weight 
         for link in self.prev_link:
             link.update_weight(learning_rate, momentum, override_x_value)
 
@@ -91,7 +98,7 @@ class NodeLink:
         self.weight = weight
 
     def update_weight(self, learning_rate, momentum, override_x_value = None):
-        if (override_x_value):
+        if (override_x_value is not None):
             delta_weight = learning_rate * self.next_node.get_current_delta() * override_x_value
         else:
             delta_weight = learning_rate * self.next_node.get_current_delta() * self.prev_node.get_current_value()

@@ -28,12 +28,12 @@ class Layer:
         return self.nodes
 
     def feed_forward(self, input_values = None):
-        if input_values:
-            if (len(input_values) != self.get_node_count()):
-                raise IncorrectSizeException("Input values supplied doesn't match input layer topology!")
         iter = 0
         output_values = [0 for x in range(self.get_node_count())]
-        if input_values:
+
+        if (input_values is not None):
+            if (len(input_values) != self.get_node_count()):
+                raise IncorrectSizeException("Input values supplied doesn't match input layer topology!")
             for node in self.nodes:
                 output_values[iter] = node.feed_forward(input_values[iter])
                 iter += 1
@@ -44,20 +44,21 @@ class Layer:
         return output_values
 
     def backpropagation(self, real_values = None):
-        if real_values:
-            if(len(real_values) != self.get_node_count()):
+        if real_values is not None:
+            if(real_values.shape[0] != self.get_node_count()):
                 raise IncorrectSizeException("Values supplied doesn't match output layer topology!")
-        iter = 0
-        if real_values:
+            iter = 0
             for node in self.nodes:
                 node.backpropagation(real_values[iter])
+                iter += 1
         else:
             for node in self.nodes:
                 node.backpropagation()
+        #print()
     
     # Only updates previous links only
     def update_weight(self, learning_rate, momentum, override_x_values = None):
-        if override_x_values:
+        if override_x_values is not None:
             iter = 0
             for node in self.nodes:
                 node.update_weight(learning_rate, momentum, override_x_values[iter])

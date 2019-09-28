@@ -1,7 +1,8 @@
 from neuralnetwork.layer import Layer
 from neuralnetwork.node import Node, NodeLink
 from neuralnetwork.exceptions import IncorrectSizeException, ModelIsNotReadyException, LayerMissingException
-from numpy.random import rand
+import numpy as np
+from utilities.operators import sigmoid, sigmoid_derivative
 
 class Model:
 
@@ -56,19 +57,25 @@ class Model:
             raise LayerMissingException("No input layer defined!")
         elif (self.output_layer == None):
             raise LayerMissingException("No output layer defined!")
-
-        for node in self.input_layer.get_all_nodes():
-            node.set_bias_weight(rand())
-            for input_link in node.get_all_prev_links():
-                input_link.set_weight(rand())
-            for next_link in node.get_all_next_links():
-                next_link.set_weight(rand())
         
+        for node in self.input_layer.get_all_nodes():
+            num_of_weights = 2 + len(node.get_all_prev_links())
+            node.set_bias_weight(np.random.rand() / num_of_weights)
+            for prev_link in node.get_all_prev_links():
+                prev_link.set_weight(np.random.rand() / num_of_weights)
+
         for layer in self.hidden_layers:
-            node.set_bias_weight(rand())
             for node in layer.get_all_nodes():
-                for next_link in node.get_all_next_links():
-                    next_link.set_weight(rand())
+                num_of_weights = 2 + len(node.get_all_prev_links())
+                node.set_bias_weight(np.random.rand() / num_of_weights)
+                for prev_link in node.get_all_prev_links():
+                    prev_link.set_weight(np.random.rand() / num_of_weights)
+        
+        for node in self.output_layer.get_all_nodes():
+            num_of_weights = 2 + len(node.get_all_prev_links())
+            node.set_bias_weight(np.random.rand() / num_of_weights)
+            for prev_link in node.get_all_prev_links():
+                prev_link.set_weight(np.random.rand() / num_of_weights)
 
         self.ready_for_training = True
 
@@ -77,25 +84,26 @@ class Model:
             raise ModelIsNotReadyException("Model has not been configured properly. (usually solved by calling 'prepare()' first.)")
         
         for x in range(epoch):
+            print("Epoch #" + str(x + 1))
             batch_result_queue = []
             iter = batch_size
             padding = 0
             for data in dataset:
-                batch_result_queue.append(self.feed_forward(data))
+                output = self.feed_forward(data)
+                print(output)
+                batch_result_queue.append(output)
                 iter -= 1
                 if (iter <= 0):
-                    print("Backprop time!")
                     for result in batch_result_queue:
-                        self.backpropagation(real_values[padding]) # STUB param, please replace
+                        self.backpropagation(real_values[padding])
                         self.update_weight(dataset[padding])
                         padding += 1
                     batch_result_queue = []
                     iter = batch_size
             
             if (len(batch_result_queue) > 0):
-                print("Backprop time!")
                 for result in batch_result_queue:
-                    self.backpropagation(real_values[padding]) # STUB param, please replace
+                    self.backpropagation(real_values[padding])
                     self.update_weight(dataset[padding])
                     padding += 1
 
@@ -105,7 +113,12 @@ class Model:
     def predict(self, input_values):
         if (len(input_values) != self.input_layer.get_node_count()):
             raise IncorrectSizeException("Input values supplied doesn't match input layer topology!")
-        pass
+        result = self.feed_forward(input_values)
+        if (len(result) < 2):
+            if (result[0] > 0.5):
+                return 1
+            else:
+                return 0
 
     def feed_forward(self, input_values):
         if not self.ready_for_training:
@@ -113,9 +126,9 @@ class Model:
         if (len(input_values) != self.input_layer.get_node_count()):
             raise IncorrectSizeException("Input values supplied doesn't match input layer topology!")
         
-        print(self.input_layer.feed_forward(input_values))
+        self.input_layer.feed_forward(input_values)
         for layer in self.hidden_layers:
-            print(layer.feed_forward())
+            layer.feed_forward()
         output_value = self.output_layer.feed_forward()
 
         return output_value
@@ -131,3 +144,4 @@ class Model:
         self.input_layer.update_weight(self.learning_rate, self.momentum, real_values)
         for layer in self.hidden_layers:
             layer.update_weight(self.learning_rate, self.momentum)
+        self.output_layer.update_weight(self.learning_rate, self.momentum)
