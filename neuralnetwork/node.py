@@ -96,6 +96,7 @@ class NodeLink:
     
     def set_weight(self, weight: float):
         self.weight = weight
+        self.previous_delta_weight = weight
 
     def update_weight(self, learning_rate, momentum, override_x_value = None):
         if (override_x_value is not None):
