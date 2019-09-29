@@ -34,7 +34,7 @@ model.add_hidden_layer(Layer(4))
 model.set_output_layer(Layer(1), True)
 model.prepare()
 
-model.train(normed_dataset, expected, 1, 950)
+model.train(normed_dataset, expected, 1, 975)
 predicted = []
 for val in normed_dataset:
     predicted.append(model.predict(val))

@@ -6,14 +6,17 @@ class Node:
     def __init__(self):
         self.prev_link = []
         self.next_link = []
-        self.current_value = 0
+        self.output_queue = []
         self.bias = 1
         self.bias_weight = 0
         self.previous_delta_bias = 0
         self.current_delta = 0
 
-    def get_current_value(self):
-        return self.current_value
+    def get_output(self, i = 0):
+        return self.output_queue[i]
+
+    def pop_output(self):
+        return self.output_queue.pop()
 
     def get_all_prev_links(self):
         return self.prev_link
@@ -48,23 +51,25 @@ class Node:
             input += (self.prev_link[0].get_weight() * input_value)
         else:
             for link in self.prev_link:
-                prev_node_value = link.get_prev_node().get_current_value()
+                prev_node_value = link.get_prev_node().get_output(0)
                 prev_node_weight = link.get_weight()
                 input += (prev_node_weight * prev_node_value)
-        self.current_value = sigmoid(input)
-        return self.current_value
+        current_value = sigmoid(input)
+        self.output_queue.append(current_value)
+        return current_value
 
     # delta == expected output, say, for an output node. 
     # If delta not supplied, this node will try to grab from it's next node
     def backpropagation(self, delta = None):
+        current_value = self.output_queue[0]
         if (delta == None):
-            this_node_delta = self.current_value * (1 - self.current_value)
+            this_node_delta =  current_value * (1 -  current_value)
             next_link_deltas = 0
             for link in self.next_link:
                 next_link_deltas += (link.get_weight() * link.get_next_node().get_current_delta())
             self.current_delta = this_node_delta * next_link_deltas
         else:
-            self.current_delta = self.current_value * (1 - self.current_value) * (delta - self.current_value)
+            self.current_delta = current_value * (1 -  current_value) * (delta -  current_value)
         #print(self.current_delta)
 
     # Only updates previous links only
@@ -102,7 +107,7 @@ class NodeLink:
         if (override_x_value is not None):
             delta_weight = learning_rate * self.next_node.get_current_delta() * override_x_value
         else:
-            delta_weight = learning_rate * self.next_node.get_current_delta() * self.prev_node.get_current_value()
+            delta_weight = learning_rate * self.next_node.get_current_delta() * self.prev_node.get_output(0)
         delta_weight += momentum * self.previous_delta_weight
         self.weight += delta_weight
         self.previous_delta_weight = delta_weight

@@ -59,20 +59,20 @@ class Model:
             raise LayerMissingException("No output layer defined!")
         
         for node in self.input_layer.get_all_nodes():
-            num_of_weights = 2 + len(node.get_all_prev_links())
+            num_of_weights = 1 + len(node.get_all_prev_links())
             node.set_bias_weight(np.random.rand() / num_of_weights)
             for prev_link in node.get_all_prev_links():
                 prev_link.set_weight(np.random.rand() / num_of_weights)
 
         for layer in self.hidden_layers:
             for node in layer.get_all_nodes():
-                num_of_weights = 2 + len(node.get_all_prev_links())
+                num_of_weights = 1 + len(node.get_all_prev_links())
                 node.set_bias_weight(np.random.rand() / num_of_weights)
                 for prev_link in node.get_all_prev_links():
                     prev_link.set_weight(np.random.rand() / num_of_weights)
         
         for node in self.output_layer.get_all_nodes():
-            num_of_weights = 2 + len(node.get_all_prev_links())
+            num_of_weights = 1 + len(node.get_all_prev_links())
             node.set_bias_weight(np.random.rand() / num_of_weights)
             for prev_link in node.get_all_prev_links():
                 prev_link.set_weight(np.random.rand() / num_of_weights)
@@ -93,29 +93,43 @@ class Model:
                 output = self.feed_forward(data)
                 if (verbose):
                     print(output)
-                batch_result_queue.append(output)
                 iter -= 1
                 if (iter <= 0):
-                    for result in batch_result_queue:
+                    while (iter < batch_size):
                         self.backpropagation(real_values[padding])
                         self.update_weight(dataset[padding])
                         padding += 1
+                        iter += 1
+                        self.pop_all_node_output()
                     batch_result_queue = []
                     iter = batch_size
             
-            if (len(batch_result_queue) > 0):
-                for result in batch_result_queue:
+            if (iter != batch_size):
+                while (iter < batch_size):
                     self.backpropagation(real_values[padding])
                     self.update_weight(dataset[padding])
                     padding += 1
+                    iter += 1
+                    self.pop_all_node_output()
 
     def test(self, dataset, real_value):
         pass
+
+    def pop_all_node_output(self):
+        for node in self.input_layer.get_all_nodes():
+            node.pop_output()
+        for layer in self.hidden_layers:
+            for node in layer.get_all_nodes():
+                node.pop_output()
+        for node in self.output_layer.get_all_nodes():
+            node.pop_output()
+
 
     def predict(self, input_values):
         if (len(input_values) != self.input_layer.get_node_count()):
             raise IncorrectSizeException("Input values supplied doesn't match input layer topology!")
         result = self.feed_forward(input_values)
+        self.pop_all_node_output()
         if (len(result) < 2):
             if (result[0] > 0.5):
                 return 1
