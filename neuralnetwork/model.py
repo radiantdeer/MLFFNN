@@ -6,13 +6,18 @@ from utilities.operators import sigmoid, sigmoid_derivative
 
 class Model:
 
-    def __init__(self, learning_rate = 0.001, momentum = 0.0001):
-        self.input_layer = None
+    def __init__(self, hidden_layer, nb_nodes, learning_rate = 0.001, momentum = 0.0001):
         self.hidden_layers = []
-        self.output_layer = None
         self.learning_rate = learning_rate
         self.momentum = momentum
         self.ready_for_training = False
+        self.set_input_layer(Layer(4))
+        if hidden_layer > 10:
+            raise IncorrectSizeException("Hidden layers maximum consist 10 layers!")
+        for i in range(hidden_layer):
+            self.add_hidden_layer(Layer(nb_nodes[i]))
+        self.set_output_layer(Layer(1), True)
+        self.prepare()
     
     def set_input_layer(self, input_layer: Layer):
         self.input_layer = input_layer
