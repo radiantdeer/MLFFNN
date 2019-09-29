@@ -27,14 +27,13 @@ normed_dataset = dataset / dataset.max(axis=0)
 
 print(normed_dataset)
 
-model = Model(learning_rate=0.00001, momentum=0.00005)
+model = Model(learning_rate=0.1, momentum=0.9)
 model.set_input_layer(Layer(4))
-model.add_hidden_layer(Layer(4))
 model.add_hidden_layer(Layer(4))
 model.set_output_layer(Layer(1), True)
 model.prepare()
 
-model.train(normed_dataset, expected, 1, 10)
+model.train(normed_dataset, expected, 1, 950)
 predicted = []
 for val in normed_dataset:
     predicted.append(model.predict(val))

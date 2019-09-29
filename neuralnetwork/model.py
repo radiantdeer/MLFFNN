@@ -79,18 +79,20 @@ class Model:
 
         self.ready_for_training = True
 
-    def train(self, dataset, real_values, batch_size = 5, epoch = 5):
+    def train(self, dataset, real_values, batch_size = 5, epoch = 5, verbose = False):
         if not self.ready_for_training:
             raise ModelIsNotReadyException("Model has not been configured properly. (usually solved by calling 'prepare()' first.)")
         
         for x in range(epoch):
-            print("Epoch #" + str(x + 1))
+            if (verbose):
+                print("Epoch #" + str(x + 1))
             batch_result_queue = []
             iter = batch_size
             padding = 0
             for data in dataset:
                 output = self.feed_forward(data)
-                print(output)
+                if (verbose):
+                    print(output)
                 batch_result_queue.append(output)
                 iter -= 1
                 if (iter <= 0):
