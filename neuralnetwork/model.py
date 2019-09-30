@@ -18,7 +18,7 @@ class Model:
             self.add_hidden_layer(Layer(nb_nodes[i]))
         self.set_output_layer(Layer(1), True)
         self.prepare()
-    
+
     def set_input_layer(self, input_layer: Layer):
         self.input_layer = input_layer
         for node in self.input_layer.get_all_nodes():
@@ -62,7 +62,7 @@ class Model:
             raise LayerMissingException("No input layer defined!")
         elif (self.output_layer == None):
             raise LayerMissingException("No output layer defined!")
-        
+
         for node in self.input_layer.get_all_nodes():
             num_of_weights = 1 + len(node.get_all_prev_links())
             node.set_bias_weight(np.random.rand() / num_of_weights)
@@ -75,7 +75,7 @@ class Model:
                 node.set_bias_weight(np.random.rand() / num_of_weights)
                 for prev_link in node.get_all_prev_links():
                     prev_link.set_weight(np.random.rand() / num_of_weights)
-        
+
         for node in self.output_layer.get_all_nodes():
             num_of_weights = 1 + len(node.get_all_prev_links())
             node.set_bias_weight(np.random.rand() / num_of_weights)
@@ -87,54 +87,34 @@ class Model:
     def train(self, dataset, real_values, batch_size = 5, epoch = 5, verbose = False):
         if not self.ready_for_training:
             raise ModelIsNotReadyException("Model has not been configured properly. (usually solved by calling 'prepare()' first.)")
-        
+
         for x in range(epoch):
             if (verbose):
                 print("Epoch #" + str(x + 1))
-            batch_result_queue = []
             iter = batch_size
-            padding = 0
+            data_iter = 0
             for data in dataset:
                 output = self.feed_forward(data)
                 if (verbose):
                     print(output)
+                self.backpropagation(real_values[data_iter])
+                self.temporary_update_weight(dataset[data_iter])
                 iter -= 1
+                data_iter += 1
                 if (iter <= 0):
-                    while (iter < batch_size):
-                        self.backpropagation(real_values[padding])
-                        self.update_weight(dataset[padding])
-                        padding += 1
-                        iter += 1
-                        self.pop_all_node_output()
-                    batch_result_queue = []
+                    self.update_weight()
                     iter = batch_size
-            
+
             if (iter != batch_size):
-                while (iter < batch_size):
-                    self.backpropagation(real_values[padding])
-                    self.update_weight(dataset[padding])
-                    padding += 1
-                    iter += 1
-                    self.pop_all_node_output()
+                self.update_weight()
 
     def test(self, dataset, real_value):
         pass
-
-    def pop_all_node_output(self):
-        for node in self.input_layer.get_all_nodes():
-            node.pop_output()
-        for layer in self.hidden_layers:
-            for node in layer.get_all_nodes():
-                node.pop_output()
-        for node in self.output_layer.get_all_nodes():
-            node.pop_output()
-
 
     def predict(self, input_values):
         if (len(input_values) != self.input_layer.get_node_count()):
             raise IncorrectSizeException("Input values supplied doesn't match input layer topology!")
         result = self.feed_forward(input_values)
-        self.pop_all_node_output()
         if (len(result) < 2):
             if (result[0] > 0.5):
                 return 1
@@ -146,7 +126,7 @@ class Model:
             raise ModelIsNotReadyException("Model has not been configured properly. (usually solved by calling 'prepare()' first.)")
         if (len(input_values) != self.input_layer.get_node_count()):
             raise IncorrectSizeException("Input values supplied doesn't match input layer topology!")
-        
+
         self.input_layer.feed_forward(input_values)
         for layer in self.hidden_layers:
             layer.feed_forward()
@@ -161,8 +141,14 @@ class Model:
             self.hidden_layers[i].backpropagation()
         self.input_layer.backpropagation()
 
-    def update_weight(self, real_values):
-        self.input_layer.update_weight(self.learning_rate, self.momentum, real_values)
+    def temporary_update_weight(self, input_values):
+        self.input_layer.temporary_update_weight(self.learning_rate, self.momentum, input_values)
         for layer in self.hidden_layers:
-            layer.update_weight(self.learning_rate, self.momentum)
-        self.output_layer.update_weight(self.learning_rate, self.momentum)
+            layer.temporary_update_weight(self.learning_rate, self.momentum)
+        self.output_layer.temporary_update_weight(self.learning_rate, self.momentum)
+
+    def update_weight(self):
+        self.input_layer.update_weight()
+        for layer in self.hidden_layers:
+            layer.update_weight()
+        self.output_layer.update_weight()

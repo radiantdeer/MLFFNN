@@ -8,10 +8,10 @@ class Layer:
         self.nodes = []
         for i in range(num_nodes):
             self.nodes.append(Node())
-        
+
     def add_node(self, node):
         self.nodes.append(node)
-    
+
     def get_node_count(self):
         return len(self.nodes)
 
@@ -55,16 +55,19 @@ class Layer:
             for node in self.nodes:
                 node.backpropagation()
         #print()
-    
+
     # Only updates previous links only
-    def update_weight(self, learning_rate, momentum, override_x_values = None):
+    def temporary_update_weight(self, learning_rate, momentum, override_x_values = None):
         if override_x_values is not None:
             iter = 0
             for node in self.nodes:
-                node.update_weight(learning_rate, momentum, override_x_values[iter])
+                node.temporary_update_weight(learning_rate, momentum, override_x_values[iter])
                 iter += 1
         else:
             for node in self.nodes:
-                node.update_weight(learning_rate, momentum)
+                node.temporary_update_weight(learning_rate, momentum)
 
-        
+    def update_weight(self):
+        for node in self.nodes:
+            node.update_weight()
+
